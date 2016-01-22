@@ -7,7 +7,7 @@ polarities.py
 '''
 import csv
 import os
-os.chdir('C:\\Users\\Isley\\Anaconda\\NLTKexploration')
+os.chdir('C:\\Users\\Isley\\polarityparsing')
 
 '''
 TODO: Open anew.csv and warriner.csv as two sets of polarities
