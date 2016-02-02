@@ -11,11 +11,9 @@ execfile('C:\\Users\\Isley\\polarityparsing\\polarities.py')
 test = "Yesterday I met a girl that kept touching me on the arm without me wanting her to."
 test1 = "She was lost and lonely despite being admired by most for her power."
 
-# Stanford NLP Parser
-
+# Stanford NLP Parsers
 os.environ['STANFORD_PARSER'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
 os.environ['STANFORD_MODELS'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
-
 java_path = "C:\\Program Files\\Java\\jdk1.8.0_60\\bin\\java.exe"
 os.environ['JAVAHOME'] = java_path
 
@@ -23,7 +21,6 @@ parser = stanford.StanfordParser(model_path='C:\\Users\\Isley\\Anaconda\\Lib\\si
 #sentences = parser.raw_parse_sents([test1, test2]) for parsing multiple sents
 
 sentences = parser.raw_parse(test)
-
 sentList = [list(i)[0] for i in sentences]
 
 #sentList[0] is the tree object for the whole sentence
@@ -75,31 +72,46 @@ def parseSent(ptree):
 
         #Base case, if the subtree has no children
         subtree = ptree[i]
-        if numOfSubtrees == 0:
+        if numOfSubtrees(ptree) == 0:
             return assignPolarity(subtree)
 
         #Otherwise, if the subtree DOES have children
-        elif numOfSubtrees == 1:
+        if numOfSubtrees(ptree) == 1:
             return parseSent(subtree.subtrees())
 
         childList = []
-        elif numOfSubtrees > 1:
+        if numOfSubtrees(ptree) > 1:
             for childtree in subtree:
                 childList.append(parseSent(childtree))
 
-    return combinePolarity(childList)
+        return combinePolarity(childList)
 
 def adjust(item1, item2):
     '''Makes an adjustment for modifiers in a sentence'''
     pass
 
-def running average(item1, item2):
-    average = it
+def listAverage(itemList):
+    return (float(sum(itemList) / len(itemList)) if len(itemList)>0 else 0)
 
-def combinePolarity(childrenlist):
+def runningAverage(itemList, item2):
+    return (listAverage(itemList) + item2)/(len(itemList)+1))
+
+modifersList = ["without", "despite"]
+
+def hasModifiers(childList):        ## TAG for modifier?
+    for element in childList:
+        if element in modifiersList:
+            return True
+    return False
+
+def combinePolarity(polarityList):
     #If the list has no modifiers in it, average together
-                
-            
+    if !hasModifiers():
+        return listAverage(polarityList)
+    else:
+        adjust
+
+        
         
 
 
@@ -117,23 +129,9 @@ def combinePolarity(childrenlist):
 ##        if subtree.right_sibling() != None: 
 ##            return parseSent(subtree)
 
-##phraseSent
-###no children
-## base case: return polarity
-##
-### else has children --> last to first
-##for each child:
-##childlist append Parseesent(sehild)
-##combine polarity function
-##                        
-
 '''
 new list created for each subtree that has children (that don't have other children)
-'''        
-                        
-
-    
-
+''' 
 
 treeSent = sentList[0]
 

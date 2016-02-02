@@ -9,13 +9,7 @@ import csv
 import os
 os.chdir('C:\\Users\\Isley\\polarityparsing')
 
-'''
-TODO: Open anew.csv and warriner.csv as two sets of polarities
-column 0 = word
-column 1 = polarity value
 
-Find out range for anew and warriner, normalize to a scale between -1 and 1.
-'''
 anewDict = {}
 with open('anew.csv', 'rb') as anewFile:
 	anewRaw = csv.reader(anewFile)
