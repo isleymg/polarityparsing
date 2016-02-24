@@ -1,16 +1,17 @@
 import nltk
-from nltk import Nonterminal, nonterminals, Production, CFG
 import os
 from nltk.parse import stanford
-import itertools
+from nltk.corpus import wordnet
 from nltk.tree import *
 
-execfile('C:\\Users\\Isley\\polarityparsing\\polarities.py')
+# execfile('C:\\Users\\Isley\\polarityparsing\\polarities.py')
+anewDict = {'lost': -0.646, 'lonely': -0.7075, 'admired': 0.685, 'power': 0.385}
+print(anewDict)
 
 # Test sentences
-test = "Yesterday I met a girl that kept touching me on the arm without me wanting her to."
-test1 = "She was lost and lonely despite being admired by most for her power."
-
+test0 = "Yesterday I met a girl that kept touching me on the arm without me wanting her to."
+test = "She was lost and lonely despite being admired by most for her power."
+test1 = "She was lost but not lonely."
 # Stanford NLP Parsers
 os.environ['STANFORD_PARSER'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
 os.environ['STANFORD_MODELS'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
@@ -20,15 +21,15 @@ os.environ['JAVAHOME'] = java_path
 parser = stanford.StanfordParser(model_path='C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars\\englishPCFG.ser.gz')
 #sentences = parser.raw_parse_sents([test1, test2]) for parsing multiple sents
 
-sentences = parser.raw_parse(test)
+sentences = parser.raw_parse(test1)
 sentList = [list(i)[0] for i in sentences]
 
 #sentList[0] is the tree object for the whole sentence
 tree = sentList[0]
-ptree = ParentedTree.convert(tree)
+print(tree)
+ptreeTEST = ParentedTree.convert(tree)
 
-#len(sentList)      == 0
-#len(sentList[0])   == 3
+
 for i in range(len(sentList[0])):
     print(i, sentList[0][i])
 
@@ -37,85 +38,92 @@ wordnet_lemmatizer = WordNetLemmatizer()
 #wordnet_lemmatizer.lemmatize('creating','v')    # u'create'
 #tokens = nltk.word_tokenize(test1)
 
-#TODO:
-#for each in sentList: treeparse(sentList)
+def get_wordnet_pos(treebank_tag):
+    if treebank_tag[0] == 'J':
+        return wordnet.ADJ
+    elif treebank_tag[0] == 'V':
+        return wordnet.VERB
+    elif treebank_tag[0] == 'N':
+        return wordnet.NOUN
+    elif treebank_tag == 'R':
+        return wordnet.ADV
+    else:
+        return ''
 
-'''
-def treeparse(sentTree):
-    for i in range(len(sentTree)):
-    
-        #if type(sentTree[i]) == nltk.tree.Tree:
-            #return treeparse(phrase[0])
-        if len(sentTree[i]) > 1:
-            return treeparse(sentTree[i])
-        else:
-            lemPolarity = 0
-            if len(sentTree[i])== 1 and type(sentTree[i][0]) == unicode:
-            lem = wordnet_lemmatizer.lemmatize(sentTree[i][0])
-            if lem in anewDict.keys():
-                lemPolarity = anewDict[lem]
-            #assign polarity
-'''
 def assignPolarity(ptree):
     '''Takes in a ParentedTree object that has no children and returns
     the polarity value of the lemmatized word token in it'''
-    polarity = anewDict[wordnet_lemmatizer.lemmatize(ptree[0], ptree[0].label())]
+    try:
+        polarity = anewDict[wordnet_lemmatizer.lemmatize(ptree[0], get_wordnet_pos(ptree.label()))]
+    except KeyError:
+        try:
+            polarity = anewDict[ptree[0]]
+        except KeyError:
+            polarity = 0
+            print('Not found: ' + ptree[0])
+            
     return polarity
 
-def numOfSubtrees(ptree):
+def numOfSubtrees(tree):
     '''Takes in a ParentedTree object and returns the number of subtrees it has'''
-    return len(list(ptree.subtrees()))
+    result = len(list(tree.subtrees()))
+    return result
         
-#len(ptree) == 3
+childList = []
+
+def parse(subtree):
+    
+    if numOfSubtrees(subtree) == 1:
+        childList.append((subtree[0], subtree.label(), assignPolarity(subtree)))
+        print(childList)
+        return childList
+
+    #if numOfSubtrees(subtree) == 1:
+        #return parse(subtree.subtrees())
+
+    if numOfSubtrees(subtree) > 1:
+        for childtree in subtree:
+            parse(childtree)
+
 def parseSent(ptree):
+    """ childList is a list of tuples with values:
+    'word', 'POS tag', and 'polarity' """
+    print('childlist')
+    print(childList)
     for i in range(len(ptree)):
-
-        #Base case, if the subtree has no children
         subtree = ptree[i]
-        if numOfSubtrees(ptree) == 0:
-            return assignPolarity(subtree)
+        parse(subtree)
+        
+    return combinePolarity(childList)
 
-        #Otherwise, if the subtree DOES have children
-        if numOfSubtrees(ptree) == 1:
-            return parseSent(subtree.subtrees())
-
-        childList = []
-        if numOfSubtrees(ptree) > 1:
-            for childtree in subtree:
-                childList.append(parseSent(childtree))
-
-        return combinePolarity(childList)
 
 def adjust(item1, item2):
     '''Makes an adjustment for modifiers in a sentence'''
     pass
 
 def listAverage(itemList):
-    return (float(sum(itemList) / len(itemList)) if len(itemList)>0 else 0)
+    num = 0
+    for word in itemList:
+        num += word[2]
+    return ( num/ float(len(itemList)))
 
 def runningAverage(itemList, item2):
-    return (listAverage(itemList) + item2)/(len(itemList)+1))
+    return ((listAverage(itemList) + item2[2])/(len(itemList)+1))
 
-modifersList = ["without", "despite"]
+modifiersList = ["without", "despite"]
 
-def hasModifiers(childList):        ## TAG for modifier?
+def hasModifiers(childList):        ## TAG for modifier? list of tuples
     for element in childList:
         if element in modifiersList:
             return True
     return False
 
-def combinePolarity(polarityList):
+def combinePolarity(childList):
     #If the list has no modifiers in it, average together
-    if !hasModifiers():
-        return listAverage(polarityList)
+    if not hasModifiers(childList):
+        return listAverage(childList)
     else:
-        adjust
-
-        
-        
-
-
-
+        return runningAverage(childList)
 
 
         
@@ -132,11 +140,6 @@ def combinePolarity(polarityList):
 '''
 new list created for each subtree that has children (that don't have other children)
 ''' 
-
-treeSent = sentList[0]
-
-#ptree.draw() will draw a diagram in a new window
-
 
 '''
 TESTING TO SEE WHICH TOKENS ARE IN LEMLIST
@@ -158,3 +161,6 @@ from nltk.corpus import sentiwordnet as swn
 happy = list(swn.senti_synsets('happy', 'a'))
 ##print(happy)
 '''
+
+if __name__ == "__main__":
+    parseSent(ptreeTEST)
