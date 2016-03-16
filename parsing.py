@@ -5,13 +5,13 @@ from nltk.corpus import wordnet
 from nltk.tree import *
 
 # execfile('C:\\Users\\Isley\\polarityparsing\\polarities.py')
-anewDict = {'lost': -0.646, 'lonely': -0.7075, 'admired': 0.685, 'power': 0.385}
+anewDict = {'lost': -0.646, 'lonely': -0.7075, 'admired': 0.685, 'power': 0.385, 'not': -0.5}
 print(anewDict)
 
 # Test sentences
 test0 = "Yesterday I met a girl that kept touching me on the arm without me wanting her to."
 test = "She was lost and lonely despite being admired by most for her power."
-test1 = "She was lost but not lonely."
+test1 = "She was not admired."
 # Stanford NLP Parsers
 os.environ['STANFORD_PARSER'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
 os.environ['STANFORD_MODELS'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
@@ -71,28 +71,39 @@ def numOfSubtrees(tree):
         
 childList = []
 
+subList = []
+
+def parseOne(subtree):
+    #third loop for lengths that are counted the same
+    if len(list(subtree.subtrees())) > 1:
+        word = subtree[0][0]
+        label = subtree[0].label()
+        subList.append((subtree[0][0], subtree[0].label(), assignPolarity(subtree[0])))
+    else:
+        subList.append((subtree[0], subtree.label(), assignPolarity(subtree)))
+    return subList
+
 def parse(subtree):
+    # second loop for each subtree within main subtree
+    if subtree.__len__() == 1:
+        parseOne(subtree)
+    else:
+        for i in range((subtree.__len__())-1,0,-1):
+            if subtree[i].__len__()==1:
+                parseOne(subtree[i])
+                
+            else:
+                parse(subtree[i])
+                
     
-    if numOfSubtrees(subtree) == 1:
-        childList.append((subtree[0], subtree.label(), assignPolarity(subtree)))
-        print(childList)
-        return childList
-
-    #if numOfSubtrees(subtree) == 1:
-        #return parse(subtree.subtrees())
-
-    if numOfSubtrees(subtree) > 1:
-        for childtree in subtree:
-            parse(childtree)
-
 def parseSent(ptree):
-    """ childList is a list of tuples with values:
-    'word', 'POS tag', and 'polarity' """
-    print('childlist')
-    print(childList)
-    for i in range(len(ptree)):
+    #first loop for each subtree under main sentence
+    for i in range((ptree.__len__())-1,0,-1):
         subtree = ptree[i]
         parse(subtree)
+        
+        # IF hasModifiers, use adjust function
+        # ELSE use listAverage
         
     return combinePolarity(childList)
 
@@ -112,8 +123,8 @@ def runningAverage(itemList, item2):
 
 modifiersList = ["without", "despite"]
 
-def hasModifiers(childList):        ## TAG for modifier? list of tuples
-    for element in childList:
+def hasModifiers(list1):       
+    for element in list1:
         if element in modifiersList:
             return True
     return False
@@ -125,17 +136,6 @@ def combinePolarity(childList):
     else:
         return runningAverage(childList)
 
-
-        
-##        #Case where subtree has no other siblings
-##        if subtree.right_sibling() == None:
-##            assignPolarity(subtree)
-##
-##            #Traverse upwards based on parent indexes?
-##
-##        #Case where subtree does have siblings
-##        if subtree.right_sibling() != None: 
-##            return parseSent(subtree)
 
 '''
 new list created for each subtree that has children (that don't have other children)
@@ -164,3 +164,4 @@ happy = list(swn.senti_synsets('happy', 'a'))
 
 if __name__ == "__main__":
     parseSent(ptreeTEST)
+    print("---end---")
