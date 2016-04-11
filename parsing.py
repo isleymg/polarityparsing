@@ -27,7 +27,8 @@ sentList = [list(i)[0] for i in sentences]
 #sentList[0] is the tree object for the whole sentence
 tree = sentList[0]
 print(tree)
-ptreeTEST = ParentedTree.convert(tree)
+ptreeTEST1 = ParentedTree.convert(tree)
+ptreeTEST = ParentedTree('S', [ParentedTree('NP', [ParentedTree('PRP', ['She'])]), ParentedTree('VP', [ParentedTree('VBD', ['was']), ParentedTree('RB', ['not']), ParentedTree('VP', [ParentedTree('VBD', ['admired'])])]), ParentedTree('.', ['.'])])
 
 
 for i in range(len(sentList[0])):
@@ -69,8 +70,6 @@ def numOfSubtrees(tree):
     result = len(list(tree.subtrees()))
     return result
         
-childList = []
-
 subList = []
 
 def parseOne(subtree):
@@ -90,7 +89,11 @@ def parse(subtree):
     else:
         for i in range((subtree.__len__())-1,0,-1):
             if subtree[i].__len__()==1:
-                parseOne(subtree[i])
+                pairList = parseOne(subtree[i])    #returns subList
+                
+                avgPol = combinePolarity(pairList)
+                subList = [avgPol]
+                #Something here that adds to a running average
                 
             else:
                 parse(subtree[i])
@@ -105,7 +108,8 @@ def parseSent(ptree):
         # IF hasModifiers, use adjust function
         # ELSE use listAverage
         
-    return combinePolarity(childList)
+    return None
+
 
 
 def adjust(item1, item2):
@@ -121,20 +125,20 @@ def listAverage(itemList):
 def runningAverage(itemList, item2):
     return ((listAverage(itemList) + item2[2])/(len(itemList)+1))
 
-modifiersList = ["without", "despite"]
+modifiersList = ["without", "despite", "not"]
 
-def hasModifiers(list1):       
-    for element in list1:
-        if element in modifiersList:
+def hasModifiers(itemList):       
+    for element in itemList:
+        if element[0] in modifiersList:
             return True
     return False
 
-def combinePolarity(childList):
+def combinePolarity(itemList):
     #If the list has no modifiers in it, average together
-    if not hasModifiers(childList):
-        return listAverage(childList)
+    if not hasModifiers(itemList):
+        return listAverage(itemList)
     else:
-        return runningAverage(childList)
+        return adjust(itemList[0], itemList[1])
 
 
 '''
