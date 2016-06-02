@@ -6,12 +6,15 @@ from nltk.tree import *
 
 # execfile('C:\\Users\\Isley\\polarityparsing\\polarities.py')
 anewDict = {'lost': -0.646, 'lonely': -0.7075, 'admired': 0.685, 'power': 0.385, 'not': -0.5}
-print(anewDict)
+warrinerDict = {'lost': -0.646, 'lonely': -0.7075, 'admired': 0.685, 'power': 0.385, 'not': -0.5}
 
 # Test sentences
 test0 = "Yesterday I met a girl that kept touching me on the arm without me wanting her to."
-test = "She was lost and lonely despite being admired by most for her power."
-test1 = "She was not admired."
+test1 = "She was lost and lonely despite being admired by most for her big awesome power."
+test = "She was not admired."
+
+demoTree = Tree('S', [Tree('NP', [Tree('PRP', ['She'])]), Tree('VP', [Tree('VBD', ['was']), Tree('VP', [Tree('VBN', ['lost']), Tree('CC', ['and']), Tree('VBN', ['lonely']), Tree('PP', [Tree('IN', ['despite']), Tree('S', [Tree('VP', [Tree('VBG', ['being']), Tree('VP', [Tree('VBD', ['admired']), Tree('PP', [Tree('IN', ['by']), Tree('NP', [Tree('NP', [Tree('JJS', ['most'])]), Tree('PP', [Tree('IN', ['for']), Tree('NP', [Tree('PRP$', ['her']), Tree('JJ', ['big']), Tree('JJ', ['awesome']), Tree('NN', ['power'])])])])])])])])])])]), Tree('.', ['.'])])
+
 # Stanford NLP Parsers
 os.environ['STANFORD_PARSER'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
 os.environ['STANFORD_MODELS'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
@@ -21,7 +24,7 @@ os.environ['JAVAHOME'] = java_path
 parser = stanford.StanfordParser(model_path='C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars\\englishPCFG.ser.gz')
 #sentences = parser.raw_parse_sents([test1, test2]) for parsing multiple sents
 
-sentences = parser.raw_parse(test1)
+sentences = parser.raw_parse(test)
 sentList = [list(i)[0] for i in sentences]
 
 #sentList[0] is the tree object for the whole sentence
@@ -51,14 +54,22 @@ def get_wordnet_pos(treebank_tag):
     else:
         return ''
 
+def average(l):
+    return float(sum(l))/len(l) if len(l) > 0 else float('nan')
+
 def assignPolarity(ptree):
     '''Takes in a ParentedTree object that has no children and returns
     the polarity value of the lemmatized word token in it'''
     try:
-        polarity = anewDict[wordnet_lemmatizer.lemmatize(ptree[0], get_wordnet_pos(ptree.label()))]
+        anew = anewDict[wordnet_lemmatizer.lemmatize(ptree[0], get_wordnet_pos(ptree.label()))]
+        warriner = warrinerDict[wordnet_lemmatizer.lemmatize(ptree[0], get_wordnet_pos(ptree.label()))]
+        polarity = average([anew, warriner])
+        print('Found : ' + ptree[0])
+
     except KeyError:
         try:
-            polarity = anewDict[ptree[0]]
+            polarity = average([warrinerDict[ptree[0]], anewDict[ptree[0]]])
+            print('Found : ' + ptree[0])
         except KeyError:
             polarity = 0
             print('Not found: ' + ptree[0])
@@ -70,57 +81,43 @@ def numOfSubtrees(tree):
     result = len(list(tree.subtrees()))
     return result
         
-subList = []
+totals = []
 
 def parseOne(subtree):
-    #third loop for lengths that are counted the same
-    if len(list(subtree.subtrees())) > 1:
+    subList = [] 
+
+    #second loop for lengths that are counted the same
+    if len(list(subtree.subtrees())) > 1:   
         word = subtree[0][0]
         label = subtree[0].label()
         subList.append((subtree[0][0], subtree[0].label(), assignPolarity(subtree[0])))
-    else:
+    else: #such as punctuation
         subList.append((subtree[0], subtree.label(), assignPolarity(subtree)))
+    print('Sublist: ', subList)
     return subList
 
-def parse(subtree):
-    # second loop for each subtree within main subtree
-    if subtree.__len__() == 1:
-        parseOne(subtree)
+def parse(tree):
+    if tree.__len__() == 1:
+        parseOne(tree)
+        subList = parseOne(tree)
+        avgPol = combinePolarity(subList)
+        totals.append(avgPol)
     else:
-        for i in range((subtree.__len__())-1,0,-1):
-            if subtree[i].__len__()==1:
-                pairList = parseOne(subtree[i])    #returns subList
+        for i in range((tree.__len__())-1,-1,-1):
+            parse(tree[i])
                 
-                avgPol = combinePolarity(pairList)
-                subList = [avgPol]
-                #Something here that adds to a running average
-                
-            else:
-                parse(subtree[i])
-                
-    
-def parseSent(ptree):
-    #first loop for each subtree under main sentence
-    for i in range((ptree.__len__())-1,0,-1):
-        subtree = ptree[i]
-        parse(subtree)
-        
-        # IF hasModifiers, use adjust function
-        # ELSE use listAverage
-        
-    return None
 
-
-
+##dimin/intensifiers -- > multiply
+##neg --> if current pos, subtract 1, else add 1
+            
 def adjust(item1, item2):
-    '''Makes an adjustment for modifiers in a sentence'''
-    pass
+    return item1+item2
 
 def listAverage(itemList):
     num = 0
     for word in itemList:
         num += word[2]
-    return ( num/ float(len(itemList)))
+    return ( num / float(len(itemList)))
 
 def runningAverage(itemList, item2):
     return ((listAverage(itemList) + item2[2])/(len(itemList)+1))
@@ -138,7 +135,13 @@ def combinePolarity(itemList):
     if not hasModifiers(itemList):
         return listAverage(itemList)
     else:
-        return adjust(itemList[0], itemList[1])
+        for element in itemList:
+            if element[0] in modifiersList:
+                index = itemList.index(element[0])
+    
+                return listAverage(adjust(itemList[index], listAverage[index:]))
+            else:
+                return 0
 
 
 '''
@@ -167,5 +170,5 @@ happy = list(swn.senti_synsets('happy', 'a'))
 '''
 
 if __name__ == "__main__":
-    parseSent(ptreeTEST)
+    parse(ptreeTEST)
     print("---end---")
