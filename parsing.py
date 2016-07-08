@@ -14,7 +14,7 @@ test1 = "She was lost and lonely despite being admired by most for her big aweso
 test = "She was not admired."
 
 demoTree = Tree('S', [Tree('NP', [Tree('PRP', ['She'])]), Tree('VP', [Tree('VBD', ['was']), Tree('VP', [Tree('VBN', ['lost']), Tree('CC', ['and']), Tree('VBN', ['lonely']), Tree('PP', [Tree('IN', ['despite']), Tree('S', [Tree('VP', [Tree('VBG', ['being']), Tree('VP', [Tree('VBD', ['admired']), Tree('PP', [Tree('IN', ['by']), Tree('NP', [Tree('NP', [Tree('JJS', ['most'])]), Tree('PP', [Tree('IN', ['for']), Tree('NP', [Tree('PRP$', ['her']), Tree('JJ', ['big']), Tree('JJ', ['awesome']), Tree('NN', ['power'])])])])])])])])])])]), Tree('.', ['.'])])
-
+'''
 # Stanford NLP Parsers
 os.environ['STANFORD_PARSER'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
 os.environ['STANFORD_MODELS'] = 'C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars'
@@ -26,16 +26,19 @@ parser = stanford.StanfordParser(model_path='C:\\Users\\Isley\\Anaconda\\Lib\\si
 
 sentences = parser.raw_parse(test)
 sentList = [list(i)[0] for i in sentences]
-
+'''
 #sentList[0] is the tree object for the whole sentence
-tree = sentList[0]
+#tree = sentList[0]
+tree=demoTree
 print(tree)
 ptreeTEST1 = ParentedTree.convert(tree)
 ptreeTEST = ParentedTree('S', [ParentedTree('NP', [ParentedTree('PRP', ['She'])]), ParentedTree('VP', [ParentedTree('VBD', ['was']), ParentedTree('RB', ['not']), ParentedTree('VP', [ParentedTree('VBD', ['admired'])])]), ParentedTree('.', ['.'])])
 
-
+'''
 for i in range(len(sentList[0])):
     print(i, sentList[0][i])
+
+'''
 
 from nltk import WordNetLemmatizer
 wordnet_lemmatizer = WordNetLemmatizer()
