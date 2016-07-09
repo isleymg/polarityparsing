@@ -24,16 +24,19 @@ os.environ['JAVAHOME'] = java_path
 parser = stanford.StanfordParser(model_path='C:\\Users\\Isley\\Anaconda\\Lib\\site-packages\\nltk\\parse\\jars\\englishPCFG.ser.gz')
 #sentences = parser.raw_parse_sents([test1, test2]) for parsing multiple sents
 
+
+#Pretty print for better visual understanding
 sentences = parser.raw_parse(test)
 sentList = [list(i)[0] for i in sentences]
 '''
+
 #sentList[0] is the tree object for the whole sentence
 #tree = sentList[0]
-tree=demoTree
-print(tree)
-ptreeTEST1 = ParentedTree.convert(tree)
-ptreeTEST = ParentedTree('S', [ParentedTree('NP', [ParentedTree('PRP', ['She'])]), ParentedTree('VP', [ParentedTree('VBD', ['was']), ParentedTree('RB', ['not']), ParentedTree('VP', [ParentedTree('VBD', ['admired'])])]), ParentedTree('.', ['.'])])
+#print(tree)
+#ptreeTEST1 = ParentedTree.convert(tree)
 
+ptreeTEST = ParentedTree('S', [ParentedTree('NP', [ParentedTree('PRP', ['She'])]), ParentedTree('VP', [ParentedTree('VBD', ['was']), ParentedTree('RB', ['not']), ParentedTree('VP', [ParentedTree('VBD', ['admired'])])]), ParentedTree('.', ['.'])])
+print(ptreeTEST)
 '''
 for i in range(len(sentList[0])):
     print(i, sentList[0][i])
@@ -140,6 +143,11 @@ def combinePolarity(itemList):
     else:
         for element in itemList:
             if element[0] in modifiersList:
+                #TODO: if modifier a intensifier/diminisher, multiply together
+                #TODO: if modifier is a negation, 
+                    #if current polarity is positive, subtract 1
+                    #if current polarity is negative, add 1
+
                 index = itemList.index(element[0])
     
                 return listAverage(adjust(itemList[index], listAverage[index:]))
@@ -163,14 +171,20 @@ for each in lemlist:
 ('0.685', 'admired')
 ('0.385', 'power')
 
-
-TODO LATER
+'''
+#TODO 
 # SentiWordNet
 from nltk.corpus import sentiwordnet as swn
 ##print(list(swn.senti_synsets('slow')))
 happy = list(swn.senti_synsets('happy', 'a'))
-##print(happy)
-'''
+#Comparing word polarities with SentiWordNet
+print("Entire 'happy' polarity from SentiWordNet: ")
+print(happy[0]) #returns object like <happy.a.01: PosScore=0.875 NegScore=0.0>
+print("Positive score for 'happy': ") 
+print(happy[0].pos_score()) #returns positive valence
+print("Negative score for 'happy': ")
+print(happy[0].neg_score()) #returns negative valence 
+#A word never has both positive and negative valence--one or the other
 
 if __name__ == "__main__":
     parse(ptreeTEST)
